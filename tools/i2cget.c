@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <linux/i2c-dev.h>
+#include "../include/linux/i2c-dev.h"
 #include "i2cbusses.h"
 #include "util.h"
 #include "../version.h"
@@ -39,7 +39,7 @@ static void help(void) __attribute__ ((noreturn));
 static void help(void)
 {
 	fprintf(stderr,
-		"Usage: i2cget [-f] [-y] I2CBUS CHIP-ADDRESS [DATA-ADDRESS [MODE]]\n"
+		"Usage: i2cget [-f] [-y] [-t] I2CBUS CHIP-ADDRESS [DATA-ADDRESS [MODE]]\n"
 		"  I2CBUS is an integer or an I2C bus name\n"
 		"  ADDRESS is an integer (0x03 - 0x77)\n"
 		"  MODE is one of:\n"
@@ -156,6 +156,7 @@ int main(int argc, char *argv[])
 	char filename[20];
 	int pec = 0;
 	int flags = 0;
+	int ten_bit = 0;
 	int force = 0, yes = 0, version = 0;
 
 	/* handle (optional) flags first */
@@ -163,6 +164,7 @@ int main(int argc, char *argv[])
 		switch (argv[1+flags][1]) {
 		case 'V': version = 1; break;
 		case 'f': force = 1; break;
+		case 't': ten_bit = 1; break;
 		case 'y': yes = 1; break;
 		default:
 			fprintf(stderr, "Error: Unsupported option "
@@ -192,7 +194,7 @@ int main(int argc, char *argv[])
 	if (argc > flags + 3) {
 		size = I2C_SMBUS_BYTE_DATA;
 		daddress = strtol(argv[flags+3], &end, 0);
-		if (*end || daddress < 0 || daddress > 0xff) {
+		if (*end || daddress < 0 || (!ten_bit && daddress > 0xff)) {
 			fprintf(stderr, "Error: Data address invalid!\n");
 			help();
 		}
@@ -214,10 +216,19 @@ int main(int argc, char *argv[])
 	}
 
 	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
+	if (ten_bit) {
+		if (ioctl(file, I2C_TENBIT, ten_bit) < 0) {
+			fprintf(stderr, "Error: Can configure 10 bit addressing: %s\n", strerror(errno));
+			close(file);
+			exit(1);
+		}
+	}
 	if (file < 0
 	 || check_funcs(file, size, daddress, pec)
 	 || set_slave_addr(file, address, force))
 		exit(1);
+
+	
 
 	if (!yes && !confirm(filename, address, size, daddress, pec))
 		exit(0);

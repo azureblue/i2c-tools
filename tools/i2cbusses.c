@@ -386,7 +386,7 @@ int parse_i2c_address(const char *address_arg)
 		fprintf(stderr, "Error: Chip address is not a number!\n");
 		return -1;
 	}
-	if (address < 0x03 || address > 0x77) {
+	if (address < 0x03 || address > 0xFF) {
 		fprintf(stderr, "Error: Chip address out of range "
 			"(0x03-0x77)!\n");
 		return -2;

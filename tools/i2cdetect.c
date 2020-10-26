@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <linux/i2c-dev.h>
+#include "../include/linux/i2c-dev.h"
 #include "i2cbusses.h"
 #include "../version.h"
 
@@ -38,7 +38,7 @@
 static void help(void)
 {
 	fprintf(stderr,
-		"Usage: i2cdetect [-y] [-a] [-q|-r] I2CBUS [FIRST LAST]\n"
+		"Usage: i2cdetect [-y] [-a] [-q|-r] [-t] I2CBUS [FIRST LAST]\n"
 		"       i2cdetect -F I2CBUS\n"
 		"       i2cdetect -l\n"
 		"  I2CBUS is an integer or an I2C bus name\n"
@@ -52,7 +52,7 @@ static int scan_i2c_bus(int file, int mode, int first, int last)
 
 	printf("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f\n");
 
-	for (i = 0; i < 128; i += 16) {
+	for (i = 0; i < 256; i += 16) {
 		printf("%02x: ", i);
 		for(j = 0; j < 16; j++) {
 			fflush(stdout);
@@ -192,6 +192,7 @@ int main(int argc, char *argv[])
 	int mode = MODE_AUTO;
 	int first = 0x03, last = 0x77;
 	int flags = 0;
+	int ten_bit = 0;
 	int yes = 0, version = 0, list = 0;
 
 	/* handle (optional) flags first */
@@ -200,6 +201,7 @@ int main(int argc, char *argv[])
 		case 'V': version = 1; break;
 		case 'y': yes = 1; break;
 		case 'l': list = 1; break;
+		case 't': ten_bit = 1; last=0xff; break;
 		case 'F':
 			if (mode != MODE_AUTO && mode != MODE_FUNC) {
 				fprintf(stderr, "Error: Different modes "
@@ -306,6 +308,14 @@ int main(int argc, char *argv[])
 			"functionality matrix: %s\n", strerror(errno));
 		close(file);
 		exit(1);
+	}
+
+	if (ten_bit) {
+		if (ioctl(file, I2C_TENBIT, ten_bit) < 0) {
+			fprintf(stderr, "Error: Can configure 10 bit addressing: %s\n", strerror(errno));
+			close(file);
+			exit(1);
+		}
 	}
 
 	/* Special case, we only list the implemented functionalities */

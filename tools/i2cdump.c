@@ -26,15 +26,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <linux/i2c-dev.h>
+#include "../include/linux/i2c-dev.h"
 #include "i2cbusses.h"
 #include "util.h"
 #include "../version.h"
 
 static void help(void)
 {
-	fprintf(stderr,
-		"Usage: i2cdump [-f] [-y] [-r first-last] I2CBUS ADDRESS [MODE [BANK [BANKREG]]]\n"
+	fprintf(stderr, 
+		"Usage: i2cdump [-f] [-y] [-t] [-r first-last] I2CBUS ADDRESS [MODE [BANK [BANKREG]]]\n"
 		"  I2CBUS is an integer or an I2C bus name\n"
 		"  ADDRESS is an integer (0x03 - 0x77)\n"
 		"  MODE is one of:\n"
@@ -42,6 +42,7 @@ static void help(void)
 		"    w (word)\n"
 		"    W (word on even register addresses)\n"
 		"    s (SMBus block)\n"
+		"	 t (10 bit addressing)\n"
 		"    i (I2C block)\n"
 		"    c (consecutive byte)\n"
 		"    Append p for SMBus PEC\n");
